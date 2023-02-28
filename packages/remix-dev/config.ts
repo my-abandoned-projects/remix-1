@@ -13,6 +13,7 @@ import { serverBuildVirtualModule } from "./compiler/virtualModules";
 import { writeConfigDefaults } from "./compiler/utils/tsconfig/write-config-defaults";
 import { flatRoutes } from "./config/flat-routes";
 import { getPreferredPackageManager } from "./cli/getPreferredPackageManager";
+import { warnOnce } from "./compiler/warnings";
 
 export interface RemixMdxConfig {
   rehypePlugins?: any[];
@@ -555,9 +556,17 @@ export async function readConfig(
     root: { path: "", id: "root", file: rootRouteFile },
   };
 
-  let routesConvention = appConfig.future?.v2_routeConvention
-    ? flatRoutes
-    : defineConventionalRoutes;
+  let routesConvention: typeof flatRoutes;
+
+  if (appConfig.future?.v2_routeConvention) {
+    routesConvention = flatRoutes;
+  } else {
+    warnOnce(
+      "Please enable the `v2_routeConvention` future flag in your remix.config",
+      "v2_routeConvention"
+    );
+    routesConvention = defineConventionalRoutes;
+  }
 
   if (fse.existsSync(path.resolve(appDirectory, "routes"))) {
     let conventionalRoutes = routesConvention(
